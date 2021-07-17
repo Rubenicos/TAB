@@ -71,7 +71,6 @@ public class NMSStorage {
 			fields.put("CHANNEL", getFields(getClass("NetworkManager"), Channel.class).get(0));
 			methods.put("getProfile", getClass("EntityPlayer").getMethod("getProfile"));
 		}
-		initializeEnums();
 		initializeChatComponents();
 		initializeChatPacket();
 		initializeDataWatcher();
@@ -81,6 +80,7 @@ public class NMSStorage {
 		initializeOtherEntityPackets();
 		initializePlayerInfoPacket();
 		initializeScoreboardPackets();
+		initializeEnums();
 	}
 
 	/**
@@ -258,8 +258,9 @@ public class NMSStorage {
 		classes.put("PacketPlayOutEntityMetadata", getNMSClass("net.minecraft.network.protocol.game.PacketPlayOutEntityMetadata", "PacketPlayOutEntityMetadata", "Packet40EntityMetadata"));
 		classes.put("PacketPlayOutNamedEntitySpawn", getNMSClass("net.minecraft.network.protocol.game.PacketPlayOutNamedEntitySpawn", "PacketPlayOutNamedEntitySpawn", "Packet20NamedEntitySpawn"));
 		constructors.put("PacketPlayOutEntityMetadata", getClass("PacketPlayOutEntityMetadata").getConstructor(int.class, getClass("DataWatcher"), boolean.class));
-		constructors.put("PacketPlayOutEntityDestroy", getConstructor(getClass("PacketPlayOutEntityDestroy"), 1));
 		fields.put("PacketPlayOutEntity_ENTITYID", getFields(getClass("PacketPlayOutEntity"), int.class).get(0));
+		fields.put("PacketPlayOutEntityDestroy_ENTITIES", getClass("PacketPlayOutEntityDestroy").getDeclaredFields()[0]);
+		fields.get("PacketPlayOutEntityDestroy_ENTITIES").setAccessible(true);
 		fields.put("PacketPlayOutEntityMetadata_LIST", getFields(getClass("PacketPlayOutEntityMetadata"), List.class).get(0));
 		fields.put("PacketPlayOutNamedEntitySpawn_ENTITYID", getFields(getClass("PacketPlayOutNamedEntitySpawn"), int.class).get(0));
 		if (minorVersion >= 7) {
@@ -268,9 +269,13 @@ public class NMSStorage {
 			fields.put("PacketPlayInUseEntity_ACTION", getFields(getClass("PacketPlayInUseEntity"), getClass("EnumEntityUseAction")).get(0));
 		}
 		if (minorVersion >= 17) {
-			fields.put("PacketPlayOutEntityDestroy_ENTITIES", getFields(getClass("PacketPlayOutEntityDestroy"), int.class).get(0));
-		} else {
-			fields.put("PacketPlayOutEntityDestroy_ENTITIES", getFields(getClass("PacketPlayOutEntityDestroy"), int[].class).get(0));
+			classes.put("PacketPlayInUseEntity$d", Class.forName("net.minecraft.network.protocol.game.PacketPlayInUseEntity$d"));
+		}
+		try {
+			constructors.put("PacketPlayOutEntityDestroy", getClass("PacketPlayOutEntityDestroy").getConstructor(int[].class));
+		} catch (NoSuchMethodException e) {
+			//1.17.0
+			constructors.put("PacketPlayOutEntityDestroy", getClass("PacketPlayOutEntityDestroy").getConstructor(int.class));
 		}
 	}
 	

@@ -101,12 +101,12 @@ public class BukkitPipelineInjector extends PipelineInjector {
 					tab.getFeatureManager().onObjective(player, packet);
 				}
 				tab.getFeatureManager().onPacketSend(player, packet);
-			} catch (Exception e){
+			} catch (Throwable e){
 				tab.getErrorManager().printError("An error occurred when reading packets", e);
 			}
 			try {
 				super.write(context, packet, channelPromise);
-			} catch (Exception e) {
+			} catch (Throwable e) {
 				tab.getErrorManager().printError("Failed to forward packet " + packet.getClass().getSimpleName() + " to " + player.getName(), e);
 			}
 		}
@@ -115,10 +115,9 @@ public class BukkitPipelineInjector extends PipelineInjector {
 		 * Removes all real players from team if packet does not come from TAB and reports this to override log
 		 * @param packetPlayOutScoreboardTeam - team packet
 		 * @throws IllegalAccessException 
-		 * @throws IllegalArgumentException 
 		 */
 		@SuppressWarnings("unchecked")
-		private void modifyPlayers(Object packetPlayOutScoreboardTeam) throws IllegalArgumentException, IllegalAccessException {
+		private void modifyPlayers(Object packetPlayOutScoreboardTeam) throws IllegalAccessException {
 			long time = System.nanoTime();
 			Collection<String> players = (Collection<String>) nms.getField("PacketPlayOutScoreboardTeam_PLAYERS").get(packetPlayOutScoreboardTeam);
 			String teamName = (String) nms.getField("PacketPlayOutScoreboardTeam_NAME").get(packetPlayOutScoreboardTeam);
@@ -131,8 +130,8 @@ public class BukkitPipelineInjector extends PipelineInjector {
 					newList.add(entry);
 					continue;
 				}
-				if (!tab.getFeatureManager().getNameTagFeature().isDisabledWorld(p.getWorldName()) && !p.hasTeamHandlingPaused() && 
-						!p.getTeamName().equals(teamName)) {
+				if (!tab.getFeatureManager().getNameTagFeature().getPlayersInDisabledWorlds().contains(p) && !p.hasTeamHandlingPaused() && 
+						!teamName.equals(p.getTeamName())) {
 					logTeamOverride(teamName, entry);
 				} else {
 					newList.add(entry);
