@@ -40,7 +40,7 @@ public class PacketListener implements RawPacketListener {
 	}
 
 	@Override
-	public Object onPacketReceive(TabPlayer sender, Object packet) throws IllegalArgumentException, IllegalAccessException {
+	public Object onPacketReceive(TabPlayer sender, Object packet) throws IllegalAccessException {
 		if (sender.getVersion().getMinorVersion() == 8 && nms.getClass("PacketPlayInUseEntity").isInstance(packet)) {
 			int entityId = nms.getField("PacketPlayInUseEntity_ENTITY").getInt(packet);
 			TabPlayer attacked = null;
@@ -57,12 +57,13 @@ public class PacketListener implements RawPacketListener {
 		return packet;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public void onPacketSend(TabPlayer receiver, Object packet) throws IllegalArgumentException, IllegalAccessException  {
+	public void onPacketSend(TabPlayer receiver, Object packet) throws IllegalAccessException  {
 		if (receiver.getVersion().getMinorVersion() < 8) return;
 		//using bukkit player to check world due to old data on world change due to asynchronous processing & world name changing
 		String world = ((Player)receiver.getPlayer()).getWorld().getName();
-		if (!receiver.isLoaded() || nameTagX.isDisabledWorld(world) || nameTagX.isDisabledWorld(nameTagX.disabledUnlimitedWorlds, world)) return;
+		if (!receiver.isLoaded() || nameTagX.getPlayersInDisabledWorlds().contains(receiver) || nameTagX.isDisabledWorld(nameTagX.disabledUnlimitedWorlds, world)) return;
 		if (nms.getClass("PacketPlayOutEntity").isInstance(packet) && !nms.getClass("PacketPlayOutEntityLook").isInstance(packet)) { //ignoring head rotation only packets
 			onEntityMove(receiver, nms.getField("PacketPlayOutEntity_ENTITYID").getInt(packet));
 		} else if (nms.getClass("PacketPlayOutEntityTeleport").isInstance(packet)) {
@@ -71,7 +72,12 @@ public class PacketListener implements RawPacketListener {
 			onEntitySpawn(receiver, nms.getField("PacketPlayOutNamedEntitySpawn_ENTITYID").getInt(packet));
 		} else if (nms.getClass("PacketPlayOutEntityDestroy").isInstance(packet)) {
 			if (nms.getMinorVersion() >= 17) {
-				onEntityDestroy(receiver, nms.getField("PacketPlayOutEntityDestroy_ENTITIES").getInt(packet));
+				try {
+					onEntityDestroy(receiver, (List<Integer>) nms.getField("PacketPlayOutEntityDestroy_ENTITIES").get(packet));
+				} catch (ClassCastException e) {
+					//1.17.0
+					onEntityDestroy(receiver, nms.getField("PacketPlayOutEntityDestroy_ENTITIES").getInt(packet));
+				}
 			} else {
 				onEntityDestroy(receiver, (int[]) nms.getField("PacketPlayOutEntityDestroy_ENTITIES").get(packet));
 			}
@@ -83,7 +89,7 @@ public class PacketListener implements RawPacketListener {
 	 * @param receiver - packet receiver
 	 * @param entityId - entity that moved
 	 */
-	public void onEntityMove(TabPlayer receiver, int entityId) {
+	private void onEntityMove(TabPlayer receiver, int entityId) {
 		TabPlayer pl = nameTagX.getEntityIdMap().get(entityId);
 		List<Entity> vehicleList;
 		if (pl != null) {
@@ -100,19 +106,29 @@ public class PacketListener implements RawPacketListener {
 		}
 	}
 	
-	public void onEntitySpawn(TabPlayer receiver, int entityId) {
+	private void onEntitySpawn(TabPlayer receiver, int entityId) {
 		TabPlayer spawnedPlayer = nameTagX.getEntityIdMap().get(entityId);
 		if (spawnedPlayer != null && spawnedPlayer.isLoaded()) {
 			tab.getCPUManager().runMeasuredTask("processing NamedEntitySpawn", getFeatureType(), UsageType.PACKET_NAMED_ENTITY_SPAWN, () -> spawnedPlayer.getArmorStandManager().spawn(receiver));
 		}
 	}
 
-	public void onEntityDestroy(TabPlayer receiver, int... entities) {
+	private void onEntityDestroy(TabPlayer receiver, List<Integer> entities) {
 		for (int entity : entities) {
-			TabPlayer despawnedPlayer = nameTagX.getEntityIdMap().get(entity);
-			if (despawnedPlayer != null && despawnedPlayer.isLoaded()) 
-				tab.getCPUManager().runMeasuredTask("processing EntityDestroy", getFeatureType(), UsageType.PACKET_ENTITY_DESTROY, () -> despawnedPlayer.getArmorStandManager().destroy(receiver));
+			onEntityDestroy(receiver, entity);
 		}
+	}
+	
+	private void onEntityDestroy(TabPlayer receiver, int... entities) {
+		for (int entity : entities) {
+			onEntityDestroy(receiver, entity);
+		}
+	}
+	
+	private void onEntityDestroy(TabPlayer receiver, int entity) {
+		TabPlayer despawnedPlayer = nameTagX.getEntityIdMap().get(entity);
+		if (despawnedPlayer != null && despawnedPlayer.isLoaded()) 
+			tab.getCPUManager().runMeasuredTask("processing EntityDestroy", getFeatureType(), UsageType.PACKET_ENTITY_DESTROY, () -> despawnedPlayer.getArmorStandManager().destroy(receiver));
 	}
 
 	@Override

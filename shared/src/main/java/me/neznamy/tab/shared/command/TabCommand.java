@@ -8,11 +8,11 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 
 import me.neznamy.tab.api.TabPlayer;
+import me.neznamy.tab.shared.PropertyUtils;
 import me.neznamy.tab.shared.TAB;
 import me.neznamy.tab.shared.command.level1.AnnounceCommand;
 import me.neznamy.tab.shared.command.level1.BossBarCommand;
 import me.neznamy.tab.shared.command.level1.CpuCommand;
-import me.neznamy.tab.shared.command.level1.CpuTestCommand;
 import me.neznamy.tab.shared.command.level1.DebugCommand;
 import me.neznamy.tab.shared.command.level1.GroupCommand;
 import me.neznamy.tab.shared.command.level1.NTPreviewCommand;
@@ -42,7 +42,6 @@ public class TabCommand extends SubCommand {
 		registerSubCommand(new AnnounceCommand());
 		registerSubCommand(new BossBarCommand());
 		registerSubCommand(new CpuCommand());
-		registerSubCommand(new CpuTestCommand());
 		registerSubCommand(new DebugCommand());
 		registerSubCommand(new GroupCommand());
 		registerSubCommand(new NTPreviewCommand());
@@ -55,7 +54,7 @@ public class TabCommand extends SubCommand {
 		if (tab.isPremium()) {
 			registerSubCommand(new ScoreboardCommand());
 		}
-		Set<String> properties = Sets.newHashSet("tabprefix", "tabsuffix", "tagprefix", "tagsuffix", "customtabname", "abovename", "belowname", "customtagname");
+		Set<String> properties = Sets.newHashSet(PropertyUtils.TABPREFIX, PropertyUtils.TABSUFFIX, PropertyUtils.TAGPREFIX, PropertyUtils.TAGSUFFIX, PropertyUtils.CUSTOMTABNAME, PropertyUtils.ABOVENAME, PropertyUtils.BELOWNAME, PropertyUtils.CUSTOMTAGNAME);
 		for (Object line : ((DebugCommand)getSubcommands().get("debug")).getExtraLines()) {
 			properties.add(line.toString());
 		}

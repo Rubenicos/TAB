@@ -108,12 +108,12 @@ public class BungeePipelineInjector extends PipelineInjector {
 					tab.getFeatureManager().onLoginPacket(player);
 					return;
 				}
-			} catch (Exception e){
+			} catch (Throwable e){
 				tab.getErrorManager().printError("An error occurred when analyzing packets for player " + player.getName() + " with client version " + player.getVersion().getFriendlyName(), e);
 			}
 			try {
 				super.write(context, modifiedPacket, channelPromise);
-			} catch (Exception e) {
+			} catch (Throwable e) {
 				tab.getErrorManager().printError("Failed to forward packet " + modifiedPacket.getClass().getSimpleName() + " to " + player.getName(), e);
 			}
 		}
@@ -127,7 +127,7 @@ public class BungeePipelineInjector extends PipelineInjector {
 			if (packet.getPlayers() == null) return;
 			Collection<String> col = Lists.newArrayList(packet.getPlayers());
 			for (TabPlayer p : tab.getPlayers()) {
-				if (col.contains(p.getName()) && !tab.getFeatureManager().getNameTagFeature().isDisabledWorld(p.getWorldName()) && 
+				if (col.contains(p.getName()) && !tab.getFeatureManager().getNameTagFeature().getPlayersInDisabledWorlds().contains(p) && 
 						!p.hasTeamHandlingPaused() && !packet.getName().equals(p.getTeamName())) {
 					logTeamOverride(packet.getName(), p.getName());
 					col.remove(p.getName());
